@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 
 #include "math-toolkit.h"
 #include "primitives.h"
@@ -164,7 +165,6 @@ static void compute_specular_diffuse(double *diffuse,
                                      const point3 n, double phong_pow)
 {
     point3 d_copy, l_copy, middle, r;
-
     /* Calculate vector to eye V */
     COPY_POINT3(d_copy, d);
     multiply_vector(d_copy, -1, d_copy);
@@ -467,10 +467,13 @@ void raytracing(uint8_t *pixels, color background_color,
     idx_stack stk;
 
     int factor = sqrt(SAMPLES);
+    double r = 0, g = 0, b = 0;
+    #pragma omp parallel for num_threads(32)\
+    private(stk),private(d),private(object_color),private(r),private(g),private(b)
     for (int j = 0; j < height; j++) {
         for (int i = 0; i < width; i++) {
-            double r = 0, g = 0, b = 0;
             /* MSAA */
+            r = 0, g = 0, b = 0;
             for (int s = 0; s < SAMPLES; s++) {
                 idx_stack_init(&stk);
                 rayConstruction(d, u, v, w,
